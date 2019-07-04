@@ -4,14 +4,19 @@ set -e
 set -o pipefail
 
 # Installing lxml and psutil here means we don't need to build them
-# from source (which happens if we install them via Pip). We need
-# util-linux for the column utility used in 'make help'.
+# from source (which happens if we install them via Pip). gcc,
+# musl-dev, and python3-dev are needed for compiling regex (which
+# sadly we must install via Pip). We need util-linux for the column
+# utility used in 'make help'.
 packages="
 
+gcc
 make
+musl-dev
 py3-lxml
 py3-psutil
 python3
+python3-dev
 wget
 util-linux
 
