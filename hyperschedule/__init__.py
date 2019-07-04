@@ -66,6 +66,9 @@ class Date:
         self.month = dt.month
         self.day = dt.day
 
+    def __str__(self):
+        return "{}-{}-{}".format(self.year, self.month, self.day)
+
 
 class Time:
     """
@@ -87,12 +90,20 @@ class Time:
         self.hour = dt.hour
         self.minute = dt.minute
 
+    def __str__(self):
+        hour = (self.hour - 1) % 12 + 1
+        minute = self.minute
+        ampm = "AM" if self.hour < 12 else "PM"
+        return "{}:{} {}".format(hour, minute, ampm)
+
 
 class Weekdays:
     """
     Class representing some subset of the days of the week (Monday
     through Sunday).
     """
+
+    CHARS = "MTWRFSU"
 
     def __init__(self, days=None):
         """
@@ -111,11 +122,20 @@ class Weekdays:
         `Weekdays`.
         """
         day = day.upper()
-        if day not in "MTWRFSU":
+        if day not in Weekdays.CHARS:
             raise MaintainerError("add_day got invalid day: {}", day)
         if day in days:
             log.warn("add_day got same day more than once: {}", day)
         days.add(day)
+
+    def is_empty(self):
+        """
+        Check if there are no days in this `Weekdays` object.
+        """
+        return bool(self.days)
+
+    def __str__(self):
+        return "".join(sorted(self.days, key=lambda d: Weekdays.CHARS.index(d)))
 
 
 class Subterm:
@@ -148,6 +168,14 @@ class Subterm:
             raise MaintainerError("Subterm got no truthy arguments: {}", subterms)
         self.subterms = tuple(map(bool, subterms))
 
+    def __str__(self):
+        fractions = [
+            "{}/{}".format(idx + 1, len(self.subterms))
+            for idx, included in enumerate(self.subterms)
+            if included
+        ]
+        return ", ".join(fractions)
+
 
 # Indicates that a course runs for the entire term.
 FullTerm = Subterm(True)
@@ -176,11 +204,113 @@ MiddleAndLastThirdTerms = Subterm(False, True, True)
 
 class Meeting:
     """
-    Class representing a single scheduled meeting time for a course,
-    recurring or not.
+    Class representing a single recurring meeting time for a course.
     """
 
-    # TODO: implement
+    def __init__(
+        self,
+        start_date=None,
+        end_date=None,
+        weekdays=None,
+        start_time=None,
+        end_time=None,
+        subterm=None,
+        location=None,
+    ):
+        self.start_date = None
+        self.end_date = None
+        self.weekdays = None
+        self.start_time = None
+        self.end_time = None
+        self.subterm = None
+        self.location = None
+        if start_date is not None:
+            self.set_start_date(start_date)
+        if end_date is not None:
+            self.set_end_date(end_date)
+        if weekdays is not None:
+            self.set_weekdays(weekdays)
+        if start_time is not None:
+            self.set_start_time(start_time)
+        if end_time is not None:
+            self.set_end_time(end_time)
+        if subterm is not None:
+            self.set_subterm(subterm)
+        if location is not None:
+            self.set_location(location)
+
+    def set_dates(self, start_date, end_date):
+        self.set_start_date(start_date)
+        self.set_end_date(end_date)
+
+    def set_times(self, start_time, end_time):
+        self.set_start_time(start_time)
+        self.set_end_time(end_time)
+
+    def set_start_date(self, start_date):
+        if not isinstance(start_date, Date):
+            raise MaintainerError("set_start_date got non-Date: {}", start_date)
+        self.start_date = start_date
+        self._check_dates()
+
+    def set_end_date(self, end_date):
+        if not isinstance(end_date, Date):
+            raise MaintainerError("set_end_date got non-Date: {}", end_date)
+        self.end_date = end_date
+        self._check_dates()
+
+    def set_weekdays(self, weekdays):
+        if not isinstance(weekdays, Weekdays):
+            raise MaintainerError("set_weekdays got non-Weekdays: {}", weekdays)
+        if weekdays.is_empty():
+            raise MaintainerError("set_weekdays got empty Weekdays")
+        self.weekdays = weekdays
+
+    def set_start_time(self, start_time):
+        if not isinstance(start_time, Time):
+            raise MaintainerError("set_start_time got non-Time: {}", start_time)
+        self.start_time = start_time
+        self._check_times()
+
+    def set_end_time(self, end_time):
+        if not isinstance(end_time, Time):
+            raise MaintainerError("set_end_time got non-Time: {}", end_time)
+        self.end_time = end_time
+        self._check_times()
+
+    def set_subterm(self, subterm):
+        if not isinstance(subterm, Subterm):
+            raise MaintainerError("set_subterm got non-Subterm: {}", subterm)
+        self.subterm = subterm
+
+    def set_location(self, location):
+        if not isinstance(location, Location):
+            raise MaintainerError("set_location got non-string: {}", location)
+        self.location = location
+
+    def _check_dates(self):
+        if self.start_date is not None and self.end_date is not None:
+            if self.start_date >= self.end_date:
+                raise MaintainerError(
+                    "Meeting start date not before end date: {} >= {}",
+                    self.start_date,
+                    self.end_date,
+                )
+
+    def _check_times(self):
+        if self.start_time is not None and self.end_time is not None:
+            if self.start_time >= self.end_time:
+                raise MaintainerError(
+                    "Meeting start time not before end time: {} >= {}",
+                    self.start_time,
+                    self.end_time,
+                )
+
+    def _is_valid(self):
+        # TODO: implement
+        pass
+
+    # TODO: write docstrings
 
 
 class Schedule:
