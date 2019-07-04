@@ -1,0 +1,20 @@
+{
+  "hmc": {
+    "scraper": "claremont",
+    "options": {
+      "hmc": true
+    },
+    "frequency": "1 hour"
+  },
+  "claremont": {
+    "scraper": "claremont",
+    "options": {
+      "hmc": false
+    },
+    "frequency": "1 hour"
+  },
+  "cuboulder": {
+    "scraper": "cuboulder",
+    "frequency": "1 day"
+  }
+}
