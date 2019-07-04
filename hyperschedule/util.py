@@ -1,5 +1,7 @@
 """
 Module containing assorted utility functions and constants.
+
+Provided temporarily for backwards compatibility. Shall be removed.
 """
 
 import datetime

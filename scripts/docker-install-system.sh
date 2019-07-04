@@ -12,6 +12,7 @@ make
 py3-lxml
 py3-psutil
 python3
+wget
 util-linux
 
 "
