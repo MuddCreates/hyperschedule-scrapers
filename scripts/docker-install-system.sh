@@ -7,7 +7,8 @@ set -o pipefail
 # from source (which happens if we install them via Pip). gcc,
 # musl-dev, and python3-dev are needed for compiling regex (which
 # sadly we must install via Pip). We need util-linux for the column
-# utility used in 'make help'.
+# utility used in 'make help'. We need tzdata for dateparser to work
+# properly, as per <https://stackoverflow.com/a/51317300/3538165>.
 packages="
 
 gcc
@@ -18,6 +19,7 @@ py3-psutil
 python3
 python3-dev
 wget
+tzdata
 util-linux
 
 "

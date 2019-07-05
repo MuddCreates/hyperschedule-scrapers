@@ -1,7 +1,9 @@
 .PHONY: dev
 dev: ## Run shell with source code and deps of scrapers inside Docker
 	scripts/docker.sh build . --pull -t hyperschedule-scrapers:dev
-	scripts/docker.sh run -it --rm -v "$${PWD}:/src" hyperschedule-scrapers:dev
+	scripts/docker.sh run -it --rm \
+		-v "$${PWD}:/src" -v /etc/timezone:/etc/timezone:ro \
+		hyperschedule-scrapers:dev
 
 .PHONY: help
 help: ## Show this message
