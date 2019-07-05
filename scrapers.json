@@ -4,17 +4,27 @@
     "options": {
       "hmc": true
     },
-    "frequency": "1 hour"
+    "cron": [
+      "0 * * * ? *",
+      "* * 16-30 Apr ? *",
+      "* * 1-2 May ? *"
+    ]
   },
   "claremont": {
     "scraper": "claremont",
     "options": {
       "hmc": false
     },
-    "frequency": "1 hour"
+    "cron": [
+      "0 * * * ? *",
+      "* * 16-30 Apr ? *",
+      "* * 1-2 May ? *"
+    ]
   },
   "cuboulder": {
     "scraper": "cuboulder",
-    "frequency": "1 day"
+    "cron": [
+      "0 0/6 * * ? *"
+    ]
   }
 }
