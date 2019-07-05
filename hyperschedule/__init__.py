@@ -550,6 +550,16 @@ class Course:
     # TODO: implement
 
 
+class Term:
+    """
+    Class representing a term. Each course occurs during exactly one
+    term, and the Hyperschedule frontend displays courses from only
+    one term at a time.
+    """
+
+    # TODO: implement
+
+
 class ScraperResult:
     """
     Class representing the result of running a scraper. Conceptually,
@@ -558,6 +568,20 @@ class ScraperResult:
     """
 
     def __init__(self, term=None, courses=None):
+        """
+        Construct a new `ScraperResult`. Both arguments must be set for
+        the result to be valid, but you can do that later by calling
+        `add_course` and `set_term`.
+
+        If `term` is set, it should be a `Term` object representing
+        the term during which the `courses` are offered.
+
+        If `courses` is set, it should be an iterable containing
+        `Course` objects to return from the scraper. The courses need
+        not have all their information populated right away, if you
+        have implemented the `refine` method on your `Scraper`
+        subclass.
+        """
         self.term = None
         self.courses = {}
         if term is not None:
@@ -567,6 +591,10 @@ class ScraperResult:
                 self.add_course(course)
 
     def add_course(self, course):
+        """
+        Add a `Course` to the `ScraperResult`. It should be distinct from
+        all courses previously added.
+        """
         if not isinstance(course, Course):
             raise MaintainerError("add_course got non-course: {}", course)
         code = course.get_code()
@@ -575,6 +603,10 @@ class ScraperResult:
         self.courses[code] = course
 
     def set_term(self, term):
+        """
+        Set the `Term` of the `ScraperResult`. This is the term during
+        which the courses in the `ScraperResult` are offered.
+        """
         if not isinstance(term, Term):
             raise MaintainerError("set_term got non-term: {}", term)
         self.term = term
