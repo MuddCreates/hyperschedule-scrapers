@@ -66,6 +66,14 @@ class Date:
         self.month = dt.month
         self.day = dt.day
 
+    def __eq__(self, other):
+        if type(self) is not type(other):
+            return False
+        return (self.year, self.month, self.day) == (other.year, other.month, other.day)
+
+    def __hash__(self):
+        return hash((self.year, self.month, self.day))
+
     def __str__(self):
         return "{}-{}-{}".format(self.year, self.month, self.day)
 
@@ -89,6 +97,14 @@ class Time:
             raise MaintainerError("Time got invalid string: {}", string) from None
         self.hour = dt.hour
         self.minute = dt.minute
+
+    def __eq__(self, other):
+        if type(self) is not type(other):
+            return False
+        return (self.hour, self.minute) == (other.hour, other.minute)
+
+    def __hash__(self):
+        return hash((self.hour, self.minute))
 
     def __str__(self):
         hour = (self.hour - 1) % 12 + 1
@@ -128,11 +144,21 @@ class Weekdays:
             log.warn("add_day got same day more than once: {}", day)
         days.add(day)
 
-    def is_empty(self):
+    def _check_valid(self):
         """
-        Check if there are no days in this `Weekdays` object.
+        Raise `MaintainerError` unless this `Weekdays` object is suitable
+        for embedding in other objects.
         """
-        return bool(self.days)
+        if not self.days:
+            raise MaintainerError("Weekdays has no days")
+
+    def __eq__(self, other):
+        if type(self) is not type(other):
+            return False
+        return self.days == other.days
+
+    def __hash__(self):
+        return hash(tuple(sorted(self.days)))
 
     def __str__(self):
         return "".join(sorted(self.days, key=lambda d: Weekdays.CHARS.index(d)))
@@ -168,6 +194,14 @@ class Subterm:
             raise MaintainerError("Subterm got no truthy arguments: {}", subterms)
         self.subterms = tuple(map(bool, subterms))
 
+    def __eq__(self, other):
+        if type(self) is not type(other):
+            return False
+        return self.subterms == other.subterms
+
+    def __hash__(self):
+        return hash(tuple(self.subterms))
+
     def __str__(self):
         fractions = [
             "{}/{}".format(idx + 1, len(self.subterms))
@@ -202,7 +236,7 @@ FirstAndMiddleThirdTerms = Subterm(True, True, False)
 MiddleAndLastThirdTerms = Subterm(False, True, True)
 
 
-class Meeting:
+class Session:
     """
     Class representing a single recurring meeting time for a course.
     """
@@ -217,12 +251,56 @@ class Meeting:
         subterm=None,
         location=None,
     ):
+        """
+        Construct a new `Session`. By default most of the attributes are
+        unset, including the required ones.
+
+        The `start_date`, if given, is the `Date` on which the course
+        session has its first meeting. If the `start_date` is not
+        included in the `Weekdays` of the course, then the first
+        meeting of the course session will fall on one of those
+        `Weekdays`, but not before the `start_date`. This field is
+        optional; if it is omitted, then the exported calendar event
+        for the course sessionwill use the day of the export as the
+        start date.
+
+        The `end_date`, if given, is the `Date` on which the course
+        session has its last meeting. If the `end_date` is not
+        included in the `Weekdays` of the course, then the last
+        meeting of the course session will fall on one of those
+        `Weekdays`, but not after the `end_date`. This field is
+        optional; if it is omitted, then the exported calendar event
+        for the course session will repeat forever.
+
+        The `weekdays`, if given, are the `Weekdays` on which the
+        course session has meetings. This field is mandatory; set it
+        with `set_weekdays` if you do not pass it here.
+
+        The `start_time`, if given, is the `Time` at which the course
+        session begins. This field is mandatory; set it with
+        `set_start_time` if you do not pass it here.
+
+        The `end_time`, if given, is the `Time` at which the course
+        session ends. It must come after the `start_time`. This field
+        is mandatory; set it with `set_end_time` if you do not pass it
+        here.
+
+        The `subterm`, if given, is a `Subterm` object representing
+        the sub-part of the term during which the course session has
+        meetings. This field is optional; if it is omitted, then it
+        defaults to `FullTerm`.
+
+        The `location`, if given, is a string noting the physical
+        location of the meetings of the course session. This field is
+        optional; if it is omitted then the course session will not
+        have a location listed on the frontend.
+        """
         self.start_date = None
         self.end_date = None
         self.weekdays = None
         self.start_time = None
         self.end_time = None
-        self.subterm = None
+        self.subterm = FullTerm
         self.location = None
         if start_date is not None:
             self.set_start_date(start_date)
@@ -240,77 +318,190 @@ class Meeting:
             self.set_location(location)
 
     def set_dates(self, start_date, end_date):
+        """
+        Set the start and end `Date` objects for this course session.
+        These dates bound the course meetings, subject to the session
+        `Weekdays`. No course meetings occur before the `start_date`,
+        and none occur after the `end_date`. The `end_date` must come
+        after the `start_date`.
+        """
         self.set_start_date(start_date)
         self.set_end_date(end_date)
 
     def set_times(self, start_time, end_time):
+        """
+        Set the start and end `Time` objects for this course session. The
+        `end_time` must come after the `start_time`.
+        """
         self.set_start_time(start_time)
         self.set_end_time(end_time)
 
     def set_start_date(self, start_date):
+        """
+        Set the start `Date` for this course session. No course meetings
+        will occur before the `start_date`.
+        """
         if not isinstance(start_date, Date):
             raise MaintainerError("set_start_date got non-Date: {}", start_date)
         self.start_date = start_date
         self._check_dates()
 
     def set_end_date(self, end_date):
+        """
+        Set the end `Date` for this course session. No course meetings
+        will occur after the `end_date`.
+        """
         if not isinstance(end_date, Date):
             raise MaintainerError("set_end_date got non-Date: {}", end_date)
         self.end_date = end_date
         self._check_dates()
 
     def set_weekdays(self, weekdays):
+        """
+        Set the `Weekdays` for this course session. The course will only
+        meet on these days. You must call this method if you did not
+        pass `weekdays` when constructing the `Session`.
+        """
         if not isinstance(weekdays, Weekdays):
             raise MaintainerError("set_weekdays got non-Weekdays: {}", weekdays)
-        if weekdays.is_empty():
-            raise MaintainerError("set_weekdays got empty Weekdays")
+        weekdays._check_valid()
         self.weekdays = weekdays
 
     def set_start_time(self, start_time):
+        """
+        Set the start `Time` for this course session.
+        """
         if not isinstance(start_time, Time):
             raise MaintainerError("set_start_time got non-Time: {}", start_time)
         self.start_time = start_time
         self._check_times()
 
     def set_end_time(self, end_time):
+        """
+        Set the end `Time` for this course session.
+        """
         if not isinstance(end_time, Time):
             raise MaintainerError("set_end_time got non-Time: {}", end_time)
         self.end_time = end_time
         self._check_times()
 
     def set_subterm(self, subterm):
+        """
+        Set the `Subterm` for this course session. By default, courses are
+        `FullTerm`.
+        """
         if not isinstance(subterm, Subterm):
             raise MaintainerError("set_subterm got non-Subterm: {}", subterm)
         self.subterm = subterm
 
     def set_location(self, location):
+        """
+        Set the location for this course session, a string.
+        """
         if not isinstance(location, Location):
             raise MaintainerError("set_location got non-string: {}", location)
         self.location = location
 
     def _check_dates(self):
+        """
+        Raise `MaintainerError` if `start_date` and `end_date` are both
+        set and `start_date` is not before `end_date`.
+        """
         if self.start_date is not None and self.end_date is not None:
             if self.start_date >= self.end_date:
                 raise MaintainerError(
-                    "Meeting start date not before end date: {} >= {}",
+                    "Session start date not before end date: {} >= {}",
                     self.start_date,
                     self.end_date,
                 )
 
     def _check_times(self):
+        """
+        Raise `MaintainerError` if `start_time` and `end_time` are both
+        set and `start_time` is not before `end_time`.
+        """
         if self.start_time is not None and self.end_time is not None:
             if self.start_time >= self.end_time:
                 raise MaintainerError(
-                    "Meeting start time not before end time: {} >= {}",
+                    "Session start time not before end time: {} >= {}",
                     self.start_time,
                     self.end_time,
                 )
 
-    def _is_valid(self):
-        # TODO: implement
-        pass
+    def _check_valid(self):
+        """
+        Raise `MaintainerError` if `start_time`, `end_time`, and
+        `weekdays` are not all set.
+        """
+        if self.start_time is None:
+            raise MaintainerError("Session missing start time")
+        if self.end_time is None:
+            raise MaintainerError("Session missing end time")
+        if self.weekdays is None:
+            raise MaintainerError("Session missing Weekdays")
 
-    # TODO: write docstrings
+    def __eq__(self, other):
+        if type(self) is not type(other):
+            return False
+        return (
+            self.start_date,
+            self.end_date,
+            self.weekdays,
+            self.start_time,
+            self.end_time,
+            self.subterm,
+            self.location,
+        ) == (
+            other.start_date,
+            other.end_date,
+            other.weekdays,
+            other.start_time,
+            other.end_time,
+            other.subterm,
+            other.location,
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.start_date,
+                self.end_date,
+                self.weekdays,
+                self.start_time,
+                self.end_time,
+                self.subterm,
+                self.location,
+            )
+        )
+
+    def __str__(self):
+        groups = []
+        group = []
+        if self.weekdays is not None:
+            group.append(str(weekdays))
+        if self.start_time is not None:
+            group.append(str(self.start_time))
+        if self.start_time is not None and self.end_time is not None:
+            group.append("-")
+        if self.end_time is not None:
+            group.append(str(self.end_time))
+        if group:
+            groups.append(group)
+            group = []
+        if self.start_date is not None:
+            group.append(str(self.start_date))
+        if self.start_date is not None and self.end_date is not None:
+            group.append("-")
+        if self.end_date is not None:
+            group.append(str(self.end_date))
+        if group:
+            groups.append(group)
+            group = []
+        if self.subterm != FullTerm:
+            groups.append(str(self.subterm))
+        if self.location is not None:
+            groups.append(self.location)
+        return ", ".join(" ".join(group) for group in groups)
 
 
 class Schedule:
@@ -318,6 +509,13 @@ class Schedule:
     Class representing the set of all of a course's scheduled meeting
     times.
     """
+
+    def __init__(self, sessions=None):
+        """
+        Construct a new course `Schedule`. By default it is empty. If you
+        pass `sessions`, it should be an iterable containing `Session`
+        objects to add to the `Schedule`.
+        """
 
     # TODO: implement
 
