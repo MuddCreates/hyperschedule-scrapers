@@ -50,6 +50,9 @@ class Date:
     Class representing a specific day of the year. Immutable.
     """
 
+    def _from_json(self, string):
+        return Date(string)
+
     def __init__(self, string):
         """
         Construct a date from the given `string`, trying very hard to make
@@ -65,6 +68,9 @@ class Date:
         self.year = dt.year
         self.month = dt.month
         self.day = dt.day
+
+    def _to_json(self):
+        return "{}-{}-{}".format(self.year, self.month, self.day)
 
     def __eq__(self, other):
         if type(self) is not type(other):
@@ -83,6 +89,9 @@ class Time:
     Class representing a specific time of day. Immutable.
     """
 
+    def _from_json(self, string):
+        return Time(string)
+
     def __init__(self, string):
         """
         Construct a time from the given `string`, trying very hard to make
@@ -97,6 +106,9 @@ class Time:
             raise MaintainerError("Time got invalid string: {}", string) from None
         self.hour = dt.hour
         self.minute = dt.minute
+
+    def _to_json(self):
+        return "{:02d}:{:02d}".format(self.hour, self.minute)
 
     def __eq__(self, other):
         if type(self) is not type(other):
@@ -120,6 +132,11 @@ class Weekdays:
     """
 
     CHARS = "MTWRFSU"
+
+    def _from_json(string):
+        return Weekdays(string)
+
+    # TODO: _from_json for the rest of the classes
 
     def __init__(self, days=None):
         """
@@ -151,6 +168,9 @@ class Weekdays:
         """
         if not self.days:
             raise MaintainerError("Weekdays has no days")
+
+    def _to_json(self):
+        return "".join(sorted(self.days, key=lambda d: Weekdays.CHARS.index(d)))
 
     def __eq__(self, other):
         if type(self) is not type(other):
@@ -193,6 +213,9 @@ class Subterm:
         if not any(subterms):
             raise MaintainerError("Subterm got no truthy arguments: {}", subterms)
         self.subterms = tuple(map(bool, subterms))
+
+    def _to_json(self):
+        return list(self.subterms)
 
     def __eq__(self, other):
         if type(self) is not type(other):
@@ -439,6 +462,17 @@ class Session:
             raise MaintainerError("Session missing end time")
         if self.weekdays is None:
             raise MaintainerError("Session missing Weekdays")
+
+    def _to_json(self):
+        return {
+            "scheduleStartDate": self.start_date,
+            "scheduleEndDate": self.end_date,
+            "scheduleWeekdays": self.weekdays,
+            "scheduleStartTime": self.start_time,
+            "scheduleEndTime": self.end_time,
+            "scheduleSubterm": self.subterm,
+            "scheduleLocation": self.location,
+        }
 
     def __eq__(self, other):
         if type(self) is not type(other):
