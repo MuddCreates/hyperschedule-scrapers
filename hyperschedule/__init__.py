@@ -31,7 +31,7 @@ class Log:
 log = Log()
 
 
-class MaintainerError(Exception):
+class ImplementorError(Exception):
     """
     Exception raised when the maintainer misuses the Hyperschedule
     library.
@@ -39,7 +39,7 @@ class MaintainerError(Exception):
 
     def __init__(self, msg, *args, **kwargs):
         """
-        Construct a new `MaintainerError`, passing the `msg`, `args`, and
+        Construct a new `ImplementorError`, passing the `msg`, `args`, and
         `kwargs` to `str.format`.
         """
         super().__init__(msg.format(*args, **kwargs))
@@ -64,7 +64,7 @@ class Date:
             if dt is None:
                 raise ValueError
         except ValueError:
-            raise MaintainerError("Date got invalid string: {}", string) from None
+            raise ImplementorError("Date got invalid string: {}", string) from None
         self.year = dt.year
         self.month = dt.month
         self.day = dt.day
@@ -103,7 +103,7 @@ class Time:
             if dt is None:
                 raise ValueError
         except ValueError:
-            raise MaintainerError("Time got invalid string: {}", string) from None
+            raise ImplementorError("Time got invalid string: {}", string) from None
         self.hour = dt.hour
         self.minute = dt.minute
 
@@ -156,18 +156,18 @@ class Weekdays:
         """
         day = day.upper()
         if day not in Weekdays.CHARS:
-            raise MaintainerError("add_day got invalid day: {}", day)
+            raise ImplementorError("add_day got invalid day: {}", day)
         if day in days:
             log.warn("add_day got same day more than once: {}", day)
         days.add(day)
 
     def _check_valid(self):
         """
-        Raise `MaintainerError` unless this `Weekdays` object is suitable
+        Raise `ImplementorError` unless this `Weekdays` object is suitable
         for embedding in other objects.
         """
         if not self.days:
-            raise MaintainerError("Weekdays has no days")
+            raise ImplementorError("Weekdays has no days")
 
     def _to_json(self):
         return "".join(sorted(self.days, key=lambda d: Weekdays.CHARS.index(d)))
@@ -209,9 +209,9 @@ class Subterm:
         SecondHalfTerm = Subterm(False, True)
         """
         if not subterms:
-            raise MaintainerError("Subterm got no arguments")
+            raise ImplementorError("Subterm got no arguments")
         if not any(subterms):
-            raise MaintainerError("Subterm got no truthy arguments: {}", subterms)
+            raise ImplementorError("Subterm got no truthy arguments: {}", subterms)
         self.subterms = tuple(map(bool, subterms))
 
     def _to_json(self):
@@ -365,7 +365,7 @@ class Session:
         will occur before the `start_date`.
         """
         if not isinstance(start_date, Date):
-            raise MaintainerError("set_start_date got non-Date: {}", start_date)
+            raise ImplementorError("set_start_date got non-Date: {}", start_date)
         self.start_date = start_date
         self._check_dates()
 
@@ -375,7 +375,7 @@ class Session:
         will occur after the `end_date`.
         """
         if not isinstance(end_date, Date):
-            raise MaintainerError("set_end_date got non-Date: {}", end_date)
+            raise ImplementorError("set_end_date got non-Date: {}", end_date)
         self.end_date = end_date
         self._check_dates()
 
@@ -386,7 +386,7 @@ class Session:
         pass `weekdays` when constructing the `Session`.
         """
         if not isinstance(weekdays, Weekdays):
-            raise MaintainerError("set_weekdays got non-Weekdays: {}", weekdays)
+            raise ImplementorError("set_weekdays got non-Weekdays: {}", weekdays)
         weekdays._check_valid()
         self.weekdays = weekdays
 
@@ -395,7 +395,7 @@ class Session:
         Set the start `Time` for this course session.
         """
         if not isinstance(start_time, Time):
-            raise MaintainerError("set_start_time got non-Time: {}", start_time)
+            raise ImplementorError("set_start_time got non-Time: {}", start_time)
         self.start_time = start_time
         self._check_times()
 
@@ -404,7 +404,7 @@ class Session:
         Set the end `Time` for this course session.
         """
         if not isinstance(end_time, Time):
-            raise MaintainerError("set_end_time got non-Time: {}", end_time)
+            raise ImplementorError("set_end_time got non-Time: {}", end_time)
         self.end_time = end_time
         self._check_times()
 
@@ -414,7 +414,7 @@ class Session:
         `FullTerm`.
         """
         if not isinstance(subterm, Subterm):
-            raise MaintainerError("set_subterm got non-Subterm: {}", subterm)
+            raise ImplementorError("set_subterm got non-Subterm: {}", subterm)
         self.subterm = subterm
 
     def set_location(self, location):
@@ -422,17 +422,17 @@ class Session:
         Set the location for this course session, a string.
         """
         if not isinstance(location, Location):
-            raise MaintainerError("set_location got non-string: {}", location)
+            raise ImplementorError("set_location got non-string: {}", location)
         self.location = location
 
     def _check_dates(self):
         """
-        Raise `MaintainerError` if `start_date` and `end_date` are both
+        Raise `ImplementorError` if `start_date` and `end_date` are both
         set and `start_date` is not before `end_date`.
         """
         if self.start_date is not None and self.end_date is not None:
             if self.start_date >= self.end_date:
-                raise MaintainerError(
+                raise ImplementorError(
                     "Session start date not before end date: {} >= {}",
                     self.start_date,
                     self.end_date,
@@ -440,12 +440,12 @@ class Session:
 
     def _check_times(self):
         """
-        Raise `MaintainerError` if `start_time` and `end_time` are both
+        Raise `ImplementorError` if `start_time` and `end_time` are both
         set and `start_time` is not before `end_time`.
         """
         if self.start_time is not None and self.end_time is not None:
             if self.start_time >= self.end_time:
-                raise MaintainerError(
+                raise ImplementorError(
                     "Session start time not before end time: {} >= {}",
                     self.start_time,
                     self.end_time,
@@ -453,15 +453,15 @@ class Session:
 
     def _check_valid(self):
         """
-        Raise `MaintainerError` if `start_time`, `end_time`, and
+        Raise `ImplementorError` if `start_time`, `end_time`, and
         `weekdays` are not all set.
         """
         if self.start_time is None:
-            raise MaintainerError("Session missing start time")
+            raise ImplementorError("Session missing start time")
         if self.end_time is None:
-            raise MaintainerError("Session missing end time")
+            raise ImplementorError("Session missing end time")
         if self.weekdays is None:
-            raise MaintainerError("Session missing Weekdays")
+            raise ImplementorError("Session missing Weekdays")
 
     def _to_json(self):
         return {
@@ -630,7 +630,7 @@ class ScraperResult:
         all courses previously added.
         """
         if not isinstance(course, Course):
-            raise MaintainerError("add_course got non-course: {}", course)
+            raise ImplementorError("add_course got non-course: {}", course)
         code = course.get_code()
         if code in self.courses:
             log.warn("multiple courses with same code: {}", code)
@@ -642,7 +642,7 @@ class ScraperResult:
         which the courses in the `ScraperResult` are offered.
         """
         if not isinstance(term, Term):
-            raise MaintainerError("set_term got non-term: {}", term)
+            raise ImplementorError("set_term got non-term: {}", term)
         self.term = term
 
 
