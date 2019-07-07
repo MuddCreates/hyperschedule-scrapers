@@ -14,13 +14,14 @@ packages="
 gcc
 make
 musl-dev
+npm
 py3-lxml
 py3-psutil
 python3
 python3-dev
-wget
 tzdata
 util-linux
+wget
 
 "
 
@@ -29,6 +30,7 @@ apk add --no-cache $packages
 # Use poetry to install project dependencies. We can't just use Pip
 # because we need to parse poetry.lock.
 pip3 --disable-pip-version-check install poetry==0.12.16
+npm install -g serverless
 
 # We need to do this because Poetry doesn't know how to look for
 # python3/pip3, and instead is hardcoded to use python/pip.
